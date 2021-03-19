@@ -10,6 +10,7 @@ export const drawLine = (props: any) => {
     .attr("stroke-width", 2)
     .attr("stroke", "red")
     .attr("d", (value: any) => line(value))
+    .on("mouseout", (e: any) => console.log(e))
 }
 export const createSVG = (props: any) => {
   const { svgRef, width, margin, height } = props
@@ -22,22 +23,13 @@ export const createSVG = (props: any) => {
 }
 
 export const createLine = (props: any) => {
-  const { yMinValue, yMaxValue, xMinValue, xMaxValue } = props
-  const xScale = d3
-    .scaleLinear()
-    .domain([xMinValue!, xMaxValue!])
-    .range([0, 600])
-
-  const yScale = d3
-    .scaleLinear()
-    .domain([yMaxValue!, yMinValue!])
-    .range([400!, 0!])
+  const { yMinValue, yMaxValue, xMinValue, xMaxValue, xScale, yScale } = props
 
   const line = d3
     .line()
     .x((value: any, index: number) => xScale(value.label))
     .y((value: any) => 300 - yScale(value.value * 0.6))
-    .curve(d3.curveCardinal)
+  // .curve(d3.curveCardinal)
   return line
 }
 
@@ -67,4 +59,54 @@ export const drawTooltip = (config: any) => {
     .attr("class", classnames(["line-chart__circle", markerClass]))
 
   if (useScaleBands) focus.style("visibility", "hidden")
+
+  svg
+    .append("rect")
+    .attr("class", "overlay")
+    .attr("width", width)
+    .attr("height", height)
+    .style("opacity", 0)
+    .on("mouseover", () => {
+      focus.style("display", null)
+    })
+    .on("mouseout", () => {
+      focus.style("opacity", 0)
+      tooltip.transition().duration(300).style("opacity", 0)
+    })
+    .on("mousemove", e => mousemove(e))
+
+  function mousemove(e: any) {
+    console.log(e)
+    const bisect = d3.bisector((d: any) => d.label).left
+    const xPos = e.x
+    const invertedPoint = xScale.invert(xPos - margin.left) - 1
+    //const invertedPoint = useScaleBands
+    //   ? scaleBandInvert(xScale, xPos)
+    //   : xScale.invert(xPos)
+    const x0 = bisect(data, invertedPoint)
+    let d0 = findHoverData
+      ? findHoverData(e, height, data, xScale, yScale)
+      : data[x0]
+    focus.style("opacity", 1)
+
+    if (!d0) d0 = data[x0]
+    console.log(`LHA:  ===> file: function.ts ===> line 89 ===> d0`, d0)
+    try {
+      const x = xScale(d0.label)
+      console.log(`LHA:  ===> file: function.ts ===> line 103 ===> x`, x)
+      const y = 300 - yScale(d0.value * 0.6)
+      console.log(`LHA:  ===> file: function.ts ===> line 105 ===> y`, y)
+      focus.attr("transform", `translate(${x},${y})`)
+
+      tooltip.transition().duration(300).style("opacity", 0.9)
+
+      tooltip
+        .html(d0.tooltipContent || d0.label)
+        .style("transform", "translate(-50%,-100%)")
+        .style("left", `${xScale(d0.label) + margin.left}px`)
+        .style("top", `${yScale(d0.value) + margin.top - 10}px`)
+    } catch (e) {
+      console.log(e)
+    }
+  }
 }

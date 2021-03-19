@@ -16,7 +16,7 @@ const DemoRoute = () => {
   }, [])
   function regenerateData() {
     const chartData: Array<IData> = []
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 10; i++) {
       const value = Math.floor(Math.random() * i + 3)
       chartData.push({
         label: i,
